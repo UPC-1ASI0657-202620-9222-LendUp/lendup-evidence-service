@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
-from app.application.services.evidence import register_evidence, upload_evidence
+from app.application.services.evidence import list_evidence, register_evidence, upload_evidence
 from app.domain.entities.evidence import EvidenceStage, EvidenceType
 from app.infrastructure.persistence.database import get_session
 from app.shared.security import Principal, current_user
@@ -23,6 +23,11 @@ class EvidenceRequest(BaseModel):
     url: str | None = None
     cloudinary_public_id: str | None = Field(default=None, max_length=255)
     observacion: str | None = Field(default=None, max_length=10000)
+
+
+@router.get("/prestamos/{id}/evidencias")
+def get_evidence(id: UUID, user: Principal = Depends(current_user), session: Session = Depends(get_session)):
+    return list_evidence(session, id, user)
 
 
 @router.post("/prestamos/{id}/evidencias", status_code=201, openapi_extra={

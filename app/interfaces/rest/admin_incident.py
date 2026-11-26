@@ -23,6 +23,9 @@ class ResolutionRequest(BaseModel):
     justificacion_resolucion: str = Field(min_length=20, max_length=10000)
     decision_garantia: GuaranteeDecision
     monto_garantia_afectado: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
+    # Campos del cliente previo. El servicio calcula el saldo y obtiene la moneda de Préstamos.
+    saldo_garantia_previsto: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
+    moneda: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
 
 
 @router.get("")

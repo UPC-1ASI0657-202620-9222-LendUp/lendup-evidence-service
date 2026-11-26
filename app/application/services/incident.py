@@ -8,8 +8,11 @@ from sqlalchemy.orm import Session
 from app.domain.entities.evidence import media_mime
 from app.domain.entities.incident import clean_content
 from app.domain.events.events import incident_event, evidence_registered
+from app.application.services.incident_closure import lock_report_admission, reconcile_report_admission
 from app.infrastructure.messaging.outbox import enqueue
-from app.infrastructure.clients.loans import participant_loan
+from app.infrastructure.clients.identity import resolve_role
+from app.infrastructure.clients.loans import loan_view, participant_loan
+from app.infrastructure.clients.reservations import reservation_agreement
 from app.infrastructure.cloudinary.storage import CloudinaryStorage
 from app.infrastructure.persistence.models import incidents
 from app.infrastructure.persistence.repositories import (
@@ -46,8 +49,14 @@ def get_incident(session: Session, incident_id: UUID) -> dict:
 
 def detail(session: Session, incident_id: UUID, user: Principal) -> dict:
     incident = get_incident(session, incident_id)
-    loan = participant_loan(UUID(incident["prestamo_id"]), user)
-    return decorate(session, incident, loan)
+    loan_id = UUID(incident["prestamo_id"])
+    try:
+        loan = participant_loan(loan_id, user)
+    except HTTPException as exc:
+        if exc.status_code != 403 or resolve_role(user.user_id) != "ADMINISTRADOR":
+            raise
+        loan = loan_view(loan_id, incident["reportada_por_usuario_id"])
+    return dict(decorate(session, incident, loan), reserva=reservation_agreement(UUID(loan["reserva_id"])))
 
 
 def list_incidents(session: Session, user: Principal) -> list[dict]:
@@ -109,11 +118,17 @@ def report(session: Session, user: Principal, body: dict, photos: list[bytes]) -
             raise HTTPException(409, "La clave ya corresponde a otro reporte")
         return decorate(session, existing, loan)
 
+    admission = lock_report_admission(session, loan_id)
     existing = repo.get(incident_id)
     if existing:
         return replay(existing)
     if loan["estado"] in ("FINALIZADO", "CANCELADO"):
         raise HTTPException(409, "El préstamo está cerrado")
+    if admission.sealed:
+        reconcile_report_admission(session, loan_id, admission)
+        existing = repo.get(incident_id)
+        if existing:
+            return replay(existing)
     storage = CloudinaryStorage() if validated else None
     uploaded = []
     try:

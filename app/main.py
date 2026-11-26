@@ -12,6 +12,7 @@ from app.interfaces.rest.incident import router as incident_router
 from app.interfaces.rest.admin_incident import router as admin_incident_router
 
 from app.interfaces.rest.analysis import router as analysis_router
+from app.interfaces.rest.internal_incident import router as internal_incident_router
 
 @asynccontextmanager
 async def lifespan(app):
@@ -43,3 +44,4 @@ app.include_router(evidence_router)
 app.include_router(incident_router)
 app.include_router(admin_incident_router)
 app.include_router(analysis_router)
+app.include_router(internal_incident_router)

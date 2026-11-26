@@ -72,7 +72,11 @@ def mock_relay(monkeypatch):
     context.__enter__ = Mock(return_value=session)
     context.__exit__ = Mock(return_value=False)
     monkeypatch.setattr(relay, "Session", lambda _: context)
-    monkeypatch.setattr(relay, "get_engine", lambda: None)
+    engine = Mock()
+    connection = engine.connect.return_value.execution_options.return_value
+    connection.__enter__ = Mock(return_value=connection)
+    connection.__exit__ = Mock(return_value=False)
+    monkeypatch.setattr(relay, "get_engine", lambda: engine)
     row = dict(id=str(uuid4()), attempts=0)
     monkeypatch.setattr(relay, "next_event", lambda _: row)
     return session, row

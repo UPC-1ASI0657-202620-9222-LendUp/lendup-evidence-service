@@ -39,7 +39,7 @@ async def consume_loans(settings, stop):
                 channel = await connection.channel()
                 await channel.set_qos(prefetch_count=1)
                 exchange = await channel.declare_exchange(settings.rabbitmq_exchange, aio_pika.ExchangeType.TOPIC, durable=True)
-                dlx = await channel.declare_exchange(settings.rabbitmq_exchange + ".dlx", aio_pika.ExchangeType.TOPIC, durable=True)
+                dlx = await channel.declare_exchange(settings.rabbitmq_exchange + ".dlx", aio_pika.ExchangeType.DIRECT, durable=True)
                 dead = await channel.declare_queue(DLQ, durable=True)
                 await dead.bind(dlx, routing_key=DLQ)
                 queue = await channel.declare_queue(QUEUE, durable=True, arguments={

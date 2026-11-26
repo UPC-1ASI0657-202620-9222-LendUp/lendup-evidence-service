@@ -6,12 +6,14 @@ from fastapi import HTTPException
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from app.application.services.incident import ordered, get_incident, validate_content
+from app.application.services.incident import decorate, ordered, get_incident, validate_content
+from app.application.services.incident_closure import lock_report_admission
 from app.domain.entities.incident import GuaranteeDecision
 from app.domain.events.events import incident_event
 from app.infrastructure.messaging.outbox import enqueue
 from app.domain.entities.resolution import money, remaining_guarantee, validate_decision
-from app.infrastructure.clients.loans import administrative_loan
+from app.infrastructure.clients.loans import administrative_loan, loan_view
+from app.infrastructure.clients.reservations import reservation_agreement
 from app.infrastructure.persistence.models import incidents
 from app.infrastructure.persistence.repositories import EvidenceRepository, IncidentNoteRepository
 from app.shared.security import Principal
@@ -41,7 +43,18 @@ def admin_list(session: Session, state: str | None, kind: str | None) -> list[di
     if kind is not None:
         stmt = stmt.where(incidents.c.tipo == kind)
     rows = session.execute(stmt.order_by(incidents.c.reportada_en.desc(), incidents.c.id)).mappings().all()
-    return [local_detail(session, dict(row)) for row in rows]
+    loans = {}
+    result = []
+    for row in rows:
+        loan_id = row["prestamo_id"]
+        if loan_id not in loans:
+            loan = loan_view(UUID(loan_id), row["reportada_por_usuario_id"])
+            loans[loan_id] = loan, reservation_agreement(UUID(loan["reserva_id"]))
+        loan, agreement = loans[loan_id]
+        incident = dict(decorate(session, dict(row), loan), reserva=agreement)
+        incident["evidencias_prestamo"] = incident["prestamo"]["evidencias"]
+        result.append(incident)
+    return result
 
 
 def locked_incident(session: Session, incident_id: UUID) -> dict:
@@ -97,6 +110,9 @@ def resolve(session: Session, incident_id: UUID, admin: Principal, justification
     initial = get_incident(session, incident_id)
     require_review(initial)
     loan = administrative_loan(UUID(initial["prestamo_id"]))
+    if loan["garantia_monetaria_acordada"] is None:
+        raise HTTPException(409, "El préstamo carece de una garantía acordada verificable")
+    lock_report_admission(session, UUID(initial["prestamo_id"]))
     # Serialize resolutions across ALL incidents of the same loan, in stable order.
     # Locking reads observe the latest committed decisions under MySQL REPEATABLE READ.
     rows = session.execute(select(incidents).where(incidents.c.prestamo_id == initial["prestamo_id"])
@@ -120,4 +136,4 @@ def resolve(session: Session, incident_id: UUID, admin: Principal, justification
     enqueue(session, incident_event(incident, loan, resolved=True))
     session.commit()
     # This records a decision only; it does not charge, capture or refund money.
-    return local_detail(session, incident)
+    return dict(local_detail(session, incident), garantia_monetaria_acordada=loan["garantia_monetaria_acordada"])
