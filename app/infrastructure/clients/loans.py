@@ -8,13 +8,17 @@ from app.shared.security import Principal
 
 
 def participant_loan(loan_id: UUID, user: Principal) -> dict:
-    base = Settings().loans_service_url
-    if not base:
+    return loan_view(loan_id, user.user_id)
+
+
+def loan_view(loan_id: UUID, participant_id: str) -> dict:
+    settings = Settings()
+    if not settings.loans_service_url or len(settings.loans_service_token) < 32:
         raise HTTPException(503, "Préstamos no configurado")
     try:
         response = httpx.get(
-            base.rstrip("/") + f"/api/v1/prestamos/{loan_id}",
-            headers={"Authorization": f"Bearer {user.token}"}, timeout=5,
+            settings.loans_service_url.rstrip("/") + f"/internal/v1/prestamos/{loan_id}/participantes/{UUID(participant_id)}",
+            headers={"Authorization": f"Bearer {settings.loans_service_token}"}, timeout=5,
         )
         if response.status_code in (403, 404):
             raise HTTPException(response.status_code, "Préstamo no accesible")
@@ -22,7 +26,7 @@ def participant_loan(loan_id: UUID, user: Principal) -> dict:
         loan = response.json()
         if str(loan["id"]) != str(loan_id):
             raise ValueError("Invalid loan response")
-        if user.user_id not in (loan["prestamista_usuario_id"], loan["prestatario_usuario_id"]):
+        if participant_id not in (loan["prestamista_usuario_id"], loan["prestatario_usuario_id"]):
             raise HTTPException(403, "No participas en este préstamo")
         return loan
     except (httpx.HTTPError, ValueError, KeyError, TypeError):
@@ -30,7 +34,6 @@ def participant_loan(loan_id: UUID, user: Principal) -> dict:
 
 
 def administrative_loan(loan_id: UUID) -> dict:
-    """Proposed private contract; fail closed until the Loans team implements it."""
     settings = Settings()
     if not settings.loans_service_url or len(settings.loans_service_token) < 32:
         raise HTTPException(503, "Contrato administrativo de Préstamos no configurado")
@@ -39,12 +42,15 @@ def administrative_loan(loan_id: UUID) -> dict:
             settings.loans_service_url.rstrip("/") + f"/internal/v1/prestamos/{loan_id}/incidencias",
             headers={"Authorization": f"Bearer {settings.loans_service_token}"}, timeout=5,
         )
+        if response.status_code == 404:
+            raise HTTPException(404, "Préstamo no encontrado")
         response.raise_for_status()
         loan = response.json()
         if str(loan["id"]) != str(loan_id):
             raise ValueError("Invalid loan ID")
         from app.domain.entities.resolution import money
-        loan["garantia_monetaria_acordada"] = money(loan["garantia_monetaria_acordada"])
+        amount = loan["garantia_monetaria_acordada"]
+        loan["garantia_monetaria_acordada"] = money(amount) if amount is not None else None
         for field in ("prestamista_usuario_id", "prestatario_usuario_id"):
             loan[field] = str(UUID(str(loan[field])))
         if not isinstance(loan["moneda"], str) or len(loan["moneda"]) != 3 or not loan["moneda"].isascii() or not loan["moneda"].isalpha() or not loan["moneda"].isupper():
@@ -52,3 +58,21 @@ def administrative_loan(loan_id: UUID) -> dict:
         return loan
     except (httpx.HTTPError, ValueError, KeyError, TypeError):
         raise HTTPException(503, "No se pudo verificar la garantía en Préstamos") from None
+
+
+def loan_accepts_reports(loan_id: UUID) -> bool:
+    settings = Settings()
+    if not settings.loans_service_url or len(settings.loans_service_token) < 32:
+        raise HTTPException(503, "Préstamos no configurado")
+    try:
+        response = httpx.get(
+            settings.loans_service_url.rstrip("/") + f"/internal/v1/prestamos/{loan_id}/admision-incidencias",
+            headers={"Authorization": f"Bearer {settings.loans_service_token}"}, timeout=5,
+        )
+        response.raise_for_status()
+        accepts = response.json()["admite_reportes"]
+        if type(accepts) is not bool:
+            raise ValueError("Invalid report admission response")
+        return accepts
+    except (httpx.HTTPError, ValueError, KeyError, TypeError):
+        raise HTTPException(503, "No se pudo verificar el estado del cierre en Préstamos") from None

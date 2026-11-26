@@ -48,6 +48,12 @@ def register_evidence(session: Session, loan_id: UUID, user: Principal, data: di
     return record
 
 
+def list_evidence(session: Session, loan_id: UUID, user: Principal) -> list[dict]:
+    participant_loan(loan_id, user)
+    return sorted(EvidenceRepository(session).list_by(prestamo_id=str(loan_id)),
+                  key=lambda row: (row["registrada_en"], row["id"]))
+
+
 def upload_evidence(session: Session, loan_id: UUID, user: Principal, stage: EvidenceStage,
                     upload_id: UUID, data: bytes, declared_mime: str) -> dict:
     from sqlalchemy import text

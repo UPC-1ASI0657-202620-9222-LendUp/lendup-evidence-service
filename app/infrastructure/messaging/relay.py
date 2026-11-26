@@ -11,9 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 def relay_once(settings):
-    # The row stays locked until confirmation/failure is persisted.
-    # Run this bounded operation in a worker thread, not the API event loop.
-    with Session(get_engine()) as session:
+    # Keep the selected row locked without acquiring next-key locks that block new outbox inserts.
+    with get_engine().connect().execution_options(isolation_level="READ COMMITTED") as connection, Session(connection) as session:
         row = next_event(session)
         if row is None:
             session.rollback()

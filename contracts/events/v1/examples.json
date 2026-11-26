@@ -1,0 +1,54 @@
+{
+  "evidencias.evidencia-registrada.v1": {
+    "event_id": "719afe40-5865-4887-9bd3-07ed040418a1",
+    "event_type": "EvidenciaRegistrada",
+    "event_version": 1,
+    "aggregate_id": "e525bb3f-2a24-471f-aee4-712235b7e94a",
+    "aggregate_version": 1,
+    "occurred_at": "2026-11-26T13:00:00Z",
+    "correlation_id": "a2920676-a744-4855-af3e-8f4e31a7eaf5",
+    "payload": {
+      "prestamo_id": "09211eca-a765-48dd-831d-580abe12e88c",
+      "evidencia_id": "e525bb3f-2a24-471f-aee4-712235b7e94a",
+      "registrada_por_usuario_id": "e0f38e63-f079-409c-8346-ca1095784d2b",
+      "etapa": "ENTREGA",
+      "tipo": "FOTO"
+    }
+  },
+  "evidencias.incidencia-reportada.v1": {
+    "event_id": "84736859-27cd-4b24-ac45-284e112a6542",
+    "event_type": "IncidenciaReportada",
+    "event_version": 1,
+    "aggregate_id": "a1cfbc3c-1c4e-4c2f-9e46-72ff07253275",
+    "aggregate_version": 1,
+    "occurred_at": "2026-11-26T14:00:00Z",
+    "correlation_id": "a1cfbc3c-1c4e-4c2f-9e46-72ff07253275",
+    "payload": {
+      "prestamo_id": "09211eca-a765-48dd-831d-580abe12e88c",
+      "incidencia_id": "a1cfbc3c-1c4e-4c2f-9e46-72ff07253275",
+      "prestamista_usuario_id": "e0f38e63-f079-409c-8346-ca1095784d2b",
+      "prestatario_usuario_id": "20aa3bd3-cbaa-442b-9f1d-b4d253d3a485",
+      "reportada_por_usuario_id": "e0f38e63-f079-409c-8346-ca1095784d2b",
+      "tipo": "DANIO"
+    }
+  },
+  "evidencias.incidencia-resuelta.v1": {
+    "event_id": "fa9fd9b7-8514-4f79-9b0f-a221ff9761b6",
+    "event_type": "IncidenciaResuelta",
+    "event_version": 1,
+    "aggregate_id": "a1cfbc3c-1c4e-4c2f-9e46-72ff07253275",
+    "aggregate_version": 2,
+    "occurred_at": "2026-11-26T15:00:00Z",
+    "correlation_id": "a1cfbc3c-1c4e-4c2f-9e46-72ff07253275",
+    "payload": {
+      "prestamo_id": "09211eca-a765-48dd-831d-580abe12e88c",
+      "incidencia_id": "a1cfbc3c-1c4e-4c2f-9e46-72ff07253275",
+      "prestamista_usuario_id": "e0f38e63-f079-409c-8346-ca1095784d2b",
+      "prestatario_usuario_id": "20aa3bd3-cbaa-442b-9f1d-b4d253d3a485",
+      "decision_garantia": "AFECTACION_PARCIAL",
+      "monto_garantia_afectado": 20,
+      "moneda": "PEN",
+      "justificacion_resolucion": "Se comprobó la diferencia en las fotografías."
+    }
+  }
+}

@@ -47,6 +47,24 @@ def test_missing_guarantee():
         validate_event("prestamos.creado.v1", e)
 
 
+def test_unknown_guarantee_is_preserved():
+    e = created()
+    e["payload"]["garantia_requerida"] = False
+    del e["payload"]["garantia_monetaria_acordada"]
+    assert validate_event("prestamos.creado.v1", e)["payload"]["garantia_monetaria_acordada"] is None
+
+
+@pytest.mark.parametrize(("route", "kind"), [
+    ("extension-retencion-solicitada", "ExtensionRetencionSolicitada"),
+    ("extension-confirmacion-solicitada", "ExtensionConfirmacionSolicitada"),
+    ("extension-retencion-cancelada", "ExtensionRetencionCancelada"),
+    ("recuperacion-pendiente", "RecuperacionPendiente"),
+])
+def test_coordinated_routes_are_supported(route, kind):
+    event = dict(created(), event_type=kind, aggregate_version=5)
+    assert validate_event(f"prestamos.{route}.v1", event)["aggregate_version"] == 5
+
+
 def test_aggregate_mismatch():
     e = created()
     e["aggregate_id"] = str(uuid4())

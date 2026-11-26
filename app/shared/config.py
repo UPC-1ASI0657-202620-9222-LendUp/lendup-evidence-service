@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     rabbitmq_exchange: str = "lendup.domain.events"
     loans_service_url: str = ""
     loans_service_token: str = ""
+    evidence_loans_service_token: str = ""
+    reservations_service_url: str = ""
+    reservations_service_token: str = ""
     firebase_project_id: str = ""
 
     identity_service_url: str = ""

@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lendup.example/contracts/events/v1/evidence-events.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "event_type", "event_version", "aggregate_id", "aggregate_version", "occurred_at", "correlation_id", "payload"],
+  "properties": {
+    "event_id": { "$ref": "#/$defs/id" },
+    "event_type": { "enum": ["EvidenciaRegistrada", "IncidenciaReportada", "IncidenciaResuelta"] },
+    "event_version": { "const": 1 },
+    "aggregate_id": { "$ref": "#/$defs/id" },
+    "aggregate_version": { "type": "integer", "minimum": 1 },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "correlation_id": { "$ref": "#/$defs/id" },
+    "payload": {
+      "type": "object",
+      "required": ["prestamo_id"],
+      "properties": { "prestamo_id": { "$ref": "#/$defs/id" } }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "event_type": { "const": "EvidenciaRegistrada" } } },
+      "then": {
+        "properties": {
+          "aggregate_version": { "const": 1 },
+          "payload": {
+            "required": ["evidencia_id", "registrada_por_usuario_id", "etapa", "tipo"],
+            "properties": {
+              "evidencia_id": { "$ref": "#/$defs/id" },
+              "registrada_por_usuario_id": { "$ref": "#/$defs/id" },
+              "incidencia_id": { "$ref": "#/$defs/id" },
+              "etapa": { "enum": ["ENTREGA", "DEVOLUCION", "INCIDENCIA"] },
+              "tipo": { "enum": ["FOTO", "VIDEO", "OBSERVACION"] }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "event_type": { "enum": ["IncidenciaReportada", "IncidenciaResuelta"] } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/incidencia" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "IncidenciaReportada" } } },
+      "then": {
+        "properties": {
+          "aggregate_version": { "const": 1 },
+          "payload": {
+            "required": ["tipo", "reportada_por_usuario_id"],
+            "properties": {
+              "reportada_por_usuario_id": { "$ref": "#/$defs/id" },
+              "tipo": { "enum": ["DANIO", "PERDIDA", "RETRASO", "NO_DEVOLUCION", "OTRO"] }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "IncidenciaResuelta" } } },
+      "then": {
+        "properties": {
+          "aggregate_version": { "const": 2 },
+          "payload": {
+            "required": ["decision_garantia", "monto_garantia_afectado", "moneda", "justificacion_resolucion"],
+            "properties": {
+              "decision_garantia": { "enum": ["SIN_AFECTACION", "AFECTACION_PARCIAL", "AFECTACION_TOTAL"] },
+              "monto_garantia_afectado": { "type": "number", "minimum": 0, "maximum": 9999999999.99 },
+              "moneda": { "type": "string", "pattern": "^[A-Z]{3}$" },
+              "justificacion_resolucion": { "type": "string", "minLength": 20, "maxLength": 10000 }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "id": { "type": "string", "format": "uuid" },
+    "incidencia": {
+      "required": ["incidencia_id", "prestamista_usuario_id", "prestatario_usuario_id"],
+      "properties": {
+        "incidencia_id": { "$ref": "#/$defs/id" },
+        "prestamista_usuario_id": { "$ref": "#/$defs/id" },
+        "prestatario_usuario_id": { "$ref": "#/$defs/id" }
+      }
+    }
+  }
+}

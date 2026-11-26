@@ -9,6 +9,14 @@ metadata = MetaData()
 timestamp = text("CURRENT_TIMESTAMP(6)")
 options = {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4"}
 
+incident_closures = Table(
+    "cierres_incidencias", metadata,
+    Column("prestamo_id", CHAR(36), primary_key=True),
+    Column("sellado", Boolean, nullable=False, server_default=text("0")),
+    Column("sello_id", CHAR(36)),
+    **options,
+)
+
 incidents = Table(
     "incidencias", metadata,
     Column("id", CHAR(36), primary_key=True),

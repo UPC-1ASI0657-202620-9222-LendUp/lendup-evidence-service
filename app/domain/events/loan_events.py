@@ -7,19 +7,21 @@ ROUTES = dict(zip(
     ("creado", "objeto-entregado", "activado", "extension-solicitada", "extension-aceptada",
      "extension-rechazada", "reprogramacion-propuesta", "reprogramacion-rechazada",
      "fecha-devolucion-actualizada", "devolucion-registrada", "vencido", "finalizado",
-     "cancelado", "cancelacion-rechazada", "periodo-liberado"),
+     "cancelado", "cancelacion-rechazada", "periodo-liberado", "extension-retencion-solicitada",
+     "extension-confirmacion-solicitada", "extension-retencion-cancelada", "recuperacion-pendiente"),
     ("PrestamoCreado", "ObjetoEntregado", "PrestamoActivado", "ExtensionSolicitada",
      "ExtensionAceptada", "ExtensionRechazada", "ReprogramacionPropuesta",
      "ReprogramacionRechazada", "FechaDevolucionActualizada", "DevolucionRegistrada",
      "PrestamoVencido", "PrestamoFinalizado", "PrestamoCancelado", "CancelacionRechazada",
-     "PeriodoPrestamoLiberado"),
+     "PeriodoPrestamoLiberado", "ExtensionRetencionSolicitada", "ExtensionConfirmacionSolicitada",
+     "ExtensionRetencionCancelada", "RecuperacionPendiente"),
 ))
 ROUTES = {f"prestamos.{key}.v1": value for key, value in ROUTES.items()}
 IDS = ("prestamo_id", "reserva_id", "publicacion_id", "prestamista_usuario_id", "prestatario_usuario_id")
 # Only unambiguous lifecycle states; delivery/return registration are not state transitions here.
 STATES = {"PrestamoCreado": "RESERVADO", "PrestamoActivado": "ACTIVO",
           "PrestamoVencido": "VENCIDO", "PrestamoFinalizado": "FINALIZADO",
-          "PrestamoCancelado": "CANCELADO"}
+          "PrestamoCancelado": "CANCELADO", "RecuperacionPendiente": "RECUPERACION_PENDIENTE"}
 
 
 def validate_event(route, event):
@@ -50,8 +52,9 @@ def validate_event(route, event):
             amount = payload.get("garantia_monetaria_acordada")
             if required and amount is None:
                 raise ValueError("missing agreed guarantee")
-            amount = Decimal(str(amount)) if amount is not None else Decimal(0)
-            if not amount.is_finite() or amount < 0 or amount >= Decimal("10000000000") or amount != amount.quantize(Decimal(".01")):
+            amount = Decimal(str(amount)) if amount is not None else None
+            if amount is not None and (not amount.is_finite() or amount < 0 or amount >= Decimal("10000000000")
+                                       or amount != amount.quantize(Decimal(".01")) or required != (amount > 0)):
                 raise ValueError("invalid guarantee amount")
             payload["garantia_monetaria_acordada"] = amount
             currency = payload["moneda"]
