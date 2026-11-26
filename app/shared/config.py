@@ -14,3 +14,6 @@ class Settings(BaseSettings):
     loans_service_url: str = ""
     loans_service_token: str = ""
     firebase_project_id: str = ""
+
+    identity_service_url: str = ""
+    identity_service_token: str = ""
