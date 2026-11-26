@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     gemini_model: str = ""
     gemini_timeout_seconds: float = 20.0
     outbox_publisher_enabled: bool = False
+    loan_consumer_enabled: bool = False
     rabbitmq_url: str = ""
     rabbitmq_exchange: str = "lendup.domain.events"
     loans_service_url: str = ""

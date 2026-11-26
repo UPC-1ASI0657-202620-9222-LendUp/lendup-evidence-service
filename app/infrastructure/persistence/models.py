@@ -95,3 +95,34 @@ outbox_events = Table(
     Index("idx_outbox_pending", "published_at", "next_attempt_at"),
     **options,
 )
+
+
+inbox_events = Table(
+    "inbox_events", metadata,
+    Column("id", CHAR(36), primary_key=True),
+    Column("aggregate_id", CHAR(36), nullable=False),
+    Column("aggregate_version", Integer, nullable=False),
+    Column("routing_key", String(150), nullable=False),
+    Column("processed_at", DATETIME(fsp=6), nullable=False, server_default=timestamp),
+    **options,
+)
+
+loan_projection = Table(
+    "loan_projection", metadata,
+    Column("prestamo_id", CHAR(36), primary_key=True),
+    Column("reserva_id", CHAR(36), nullable=False),
+    Column("publicacion_id", CHAR(36), nullable=False),
+    Column("prestamista_usuario_id", CHAR(36), nullable=False),
+    Column("prestatario_usuario_id", CHAR(36), nullable=False),
+    Column("aggregate_version", Integer, nullable=False, server_default="0"),
+    Column("last_event_type", String(64)),
+    Column("estado", String(24)),
+    Column("state_version", Integer, nullable=False, server_default="0"),
+    Column("creation_version", Integer, nullable=False, server_default="0"),
+    Column("garantia_requerida", Boolean),
+    Column("garantia_monetaria_acordada", Numeric(12, 2)),
+    Column("moneda", CHAR(3)),
+    Column("devolucion_vigente_en", String(40)),
+    Column("date_version", Integer, nullable=False, server_default="0"),
+    **options,
+)

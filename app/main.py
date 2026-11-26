@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.shared.config import Settings
 from app.infrastructure.messaging.relay import relay_loop
+from app.infrastructure.messaging.loan_consumer import consume_loans
 from app.interfaces.rest.health import router as health_router
 from app.interfaces.rest.evidence import router as evidence_router
 from app.interfaces.rest.incident import router as incident_router
@@ -16,17 +17,19 @@ from app.interfaces.rest.analysis import router as analysis_router
 async def lifespan(app):
     settings = Settings()
     stop = asyncio.Event()
-    task = None
+    tasks = []
+    if (settings.outbox_publisher_enabled or settings.loan_consumer_enabled) and not settings.rabbitmq_url:
+        raise RuntimeError("RABBITMQ_URL is required when messaging is enabled")
     if settings.outbox_publisher_enabled:
-        if not settings.rabbitmq_url:
-            raise RuntimeError("RABBITMQ_URL is required when the outbox publisher is enabled")
-        task = asyncio.create_task(relay_loop(settings, stop))
+        tasks.append(asyncio.create_task(relay_loop(settings, stop)))
+    if settings.loan_consumer_enabled:
+        tasks.append(asyncio.create_task(consume_loans(settings, stop)))
     try:
         yield
     finally:
         stop.set()
-        if task is not None:
-            await task
+        if tasks:
+            await asyncio.gather(*tasks)
 
 
 app = FastAPI(

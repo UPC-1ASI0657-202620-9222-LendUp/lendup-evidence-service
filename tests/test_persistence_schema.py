@@ -6,7 +6,7 @@ from app.infrastructure.persistence.models import metadata
 
 def test_only_owned_tables():
     assert set(metadata.tables) == {
-        "incidencias", "evidencias", "analisis_evidencias", "observaciones_incidencia", "outbox_events"
+        "incidencias", "evidencias", "analisis_evidencias", "observaciones_incidencia", "outbox_events", "inbox_events", "loan_projection"
     }
     for table in metadata.tables.values():
         for fk in table.foreign_keys:
