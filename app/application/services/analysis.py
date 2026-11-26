@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.infrastructure.clients.loans import participant_loan
 from app.infrastructure.gemini.adapter import GoogleAIAdapter
+from app.infrastructure.gemini.circuit_breaker import CircuitOpenError
 from app.infrastructure.persistence.database import get_engine
 from app.infrastructure.persistence.models import analyses
 from app.infrastructure.persistence.repositories import AnalysisRepository, EvidenceRepository, IncidentRepository
@@ -92,6 +93,9 @@ async def process_analysis(analysis_id: str):
             values = dict(estado="COMPLETADO", resultado_resumen=result.resumen,
                           resultado_detalle={**result.model_dump(), "requiere_revision_humana": True},
                           error_descripcion=None)
+        except CircuitOpenError:
+            values = dict(estado="FALLIDO", error_descripcion="Gemini temporalmente no disponible; reintenta más tarde",
+                          resultado_resumen=None, resultado_detalle=None)
         except Exception as exc:
             logger.warning("Evidence analysis failed: %s (%s)", analysis_id, type(exc).__name__)
             values = dict(estado="FALLIDO", error_descripcion="No se pudo completar el análisis asistido",
