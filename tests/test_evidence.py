@@ -34,13 +34,16 @@ def test_wrong_delivery_actor(loan):
     assert error.value.status_code == 403
 
 
+@patch("app.application.services.evidence.evidence_registered")
+@patch("app.application.services.evidence.enqueue")
 @patch("app.application.services.evidence.EvidenceRepository")
 @patch("app.application.services.evidence.participant_loan")
-def test_register_note(loan, repository):
+def test_register_note(loan, repository, enqueue, event):
     loan.return_value = {"prestamista_usuario_id": USER.user_id, "estado": "RESERVADO"}
     repository.return_value.add.side_effect = lambda values: values
     session = Mock()
     record = register_evidence(session, LOAN, USER, {"etapa": EvidenceStage.DELIVERY, "tipo": EvidenceType.NOTE, "observacion": "Objeto en buen estado"})
     assert record["estado_integracion"] == "COMPLETADA"
     assert record["registrada_por_usuario_id"] == USER.user_id
+    enqueue.assert_called_once_with(session, event.return_value)
     session.commit.assert_called_once()

@@ -4,6 +4,8 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.domain.entities.evidence import EvidenceStage, EvidenceType
+from app.domain.events.events import evidence_registered
+from app.infrastructure.messaging.outbox import enqueue
 from app.infrastructure.clients.loans import participant_loan
 from app.infrastructure.persistence.repositories import EvidenceRepository, IncidentRepository
 from app.shared.security import Principal
@@ -40,6 +42,8 @@ def register_evidence(session: Session, loan_id: UUID, user: Principal, data: di
             raise HTTPException(400, "Usa la subida multipart para registrar archivos verificados")
         values["estado_integracion"] = "PENDIENTE"
     record = EvidenceRepository(session).add(values)
+    if record["estado_integracion"] == "COMPLETADA":
+        enqueue(session, evidence_registered(record))
     session.commit()
     return record
 
@@ -90,6 +94,7 @@ def upload_evidence(session: Session, loan_id: UUID, user: Principal, stage: Evi
                                            etapa=stage.value, tipo="VIDEO" if video else "FOTO",
                                            url=asset.url, cloudinary_public_id=asset.public_id,
                                            estado_integracion="COMPLETADA"))
+                    enqueue(tx, evidence_registered(record))
                     tx.commit()
                     # GET_LOCK started an implicit connection transaction; explicitly commit it.
                     connection.commit()

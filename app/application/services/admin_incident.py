@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.application.services.incident import ordered, get_incident, validate_content
 from app.domain.entities.incident import GuaranteeDecision
+from app.domain.events.events import incident_event
+from app.infrastructure.messaging.outbox import enqueue
 from app.domain.entities.resolution import money, remaining_guarantee, validate_decision
 from app.infrastructure.clients.loans import administrative_loan
 from app.infrastructure.persistence.models import incidents
@@ -115,6 +117,7 @@ def resolve(session: Session, incident_id: UUID, admin: Principal, justification
         justificacion_resolucion=justification, decision_garantia=decision.value,
         monto_garantia_afectado=amount, saldo_garantia_previsto=available - amount,
         moneda=loan["moneda"], actualizada_en=timestamp))
+    enqueue(session, incident_event(incident, loan, resolved=True))
     session.commit()
     # This records a decision only; it does not charge, capture or refund money.
     return local_detail(session, incident)

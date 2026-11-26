@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.domain.entities.evidence import media_mime
 from app.domain.entities.incident import clean_content
+from app.domain.events.events import incident_event, evidence_registered
+from app.infrastructure.messaging.outbox import enqueue
 from app.infrastructure.clients.loans import participant_loan
 from app.infrastructure.cloudinary.storage import CloudinaryStorage
 from app.infrastructure.persistence.models import incidents
@@ -125,14 +127,17 @@ def report(session: Session, user: Principal, body: dict, photos: list[bytes]) -
             raise
         evidence_repo = EvidenceRepository(session)
         for note in notes:
-            evidence_repo.add(note_values(incident, user, note))
+            record = evidence_repo.add(note_values(incident, user, note))
+            enqueue(session, evidence_registered(record))
         for data, mime in validated:
             asset = storage.upload(data, mime, f"lendup/incidencias/{incident_id}/{uuid4()}", "lendup/incidencias")
             uploaded.append(asset.public_id)
-            evidence_repo.add(dict(prestamo_id=str(loan_id), incidencia_id=incident_id,
+            record = evidence_repo.add(dict(prestamo_id=str(loan_id), incidencia_id=incident_id,
                                    registrada_por_usuario_id=user.user_id, etapa="INCIDENCIA",
                                    tipo="FOTO", url=asset.url, cloudinary_public_id=asset.public_id,
                                    estado_integracion="COMPLETADA"))
+            enqueue(session, evidence_registered(record))
+        enqueue(session, incident_event(incident, loan))
         result = decorate(session, incident, loan)
     except Exception:
         session.rollback()
@@ -164,6 +169,7 @@ def statement(session: Session, incident_id: UUID, user: Principal, content: str
     ).with_for_update()).first()
     if previous:
         raise HTTPException(409, "Ya presentaste tu descargo")
-    EvidenceRepository(session).add(note_values(incident, user, content))
+    record = EvidenceRepository(session).add(note_values(incident, user, content))
+    enqueue(session, evidence_registered(record))
     session.commit()
     return decorate(session, incident, loan)

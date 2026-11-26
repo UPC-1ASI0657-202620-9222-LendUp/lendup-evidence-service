@@ -1,6 +1,6 @@
 """Persistence mappings for the Evidence and Incident bounded context."""
 from sqlalchemy import (
-    CHAR, JSON, Column, ForeignKey, Index, MetaData, Numeric,
+    CHAR, JSON, Column, ForeignKey, Index, MetaData, Numeric, Integer, Boolean, UniqueConstraint,
     String, Table, Text, text,
 )
 from sqlalchemy.dialects.mysql import DATETIME
@@ -74,5 +74,24 @@ incident_notes = Table(
     Column("contenido", Text, nullable=False),
     Column("registrada_en", DATETIME(fsp=6), nullable=False, server_default=timestamp),
     Index("idx_observaciones_incidencia_0", "incidencia_id", "registrada_en"),
+    **options,
+)
+
+
+outbox_events = Table(
+    "outbox_events", metadata,
+    Column("id", CHAR(36), primary_key=True),
+    Column("aggregate_id", CHAR(36), nullable=False),
+    Column("aggregate_version", Integer, nullable=False),
+    Column("routing_key", String(150), nullable=False),
+    Column("envelope", JSON, nullable=False),
+    Column("mandatory", Boolean, nullable=False),
+    Column("created_at", DATETIME(fsp=6), nullable=False),
+    Column("next_attempt_at", DATETIME(fsp=6), nullable=False),
+    Column("published_at", DATETIME(fsp=6)),
+    Column("attempts", Integer, nullable=False, server_default="0"),
+    Column("last_error", String(255)),
+    UniqueConstraint("aggregate_id", "aggregate_version", name="uq_outbox_aggregate_version"),
+    Index("idx_outbox_pending", "published_at", "next_attempt_at"),
     **options,
 )

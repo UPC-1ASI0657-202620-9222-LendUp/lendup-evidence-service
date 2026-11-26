@@ -45,6 +45,8 @@ def administrative_loan(loan_id: UUID) -> dict:
             raise ValueError("Invalid loan ID")
         from app.domain.entities.resolution import money
         loan["garantia_monetaria_acordada"] = money(loan["garantia_monetaria_acordada"])
+        for field in ("prestamista_usuario_id", "prestatario_usuario_id"):
+            loan[field] = str(UUID(str(loan[field])))
         if not isinstance(loan["moneda"], str) or len(loan["moneda"]) != 3 or not loan["moneda"].isascii() or not loan["moneda"].isalpha() or not loan["moneda"].isupper():
             raise ValueError("Invalid currency")
         return loan
