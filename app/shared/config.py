@@ -5,7 +5,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str = ""
-    cloudinary_url: str = ""
+    cloudinary_enabled: bool = False
+    cloudinary_cloud_name: str = ""
+    cloudinary_api_key: str = ""
+    cloudinary_api_secret: str = ""
     gemini_api_key: str = ""
     gemini_model: str = ""
     gemini_timeout_seconds: float = 20.0
