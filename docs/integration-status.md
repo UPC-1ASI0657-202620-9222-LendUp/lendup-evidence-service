@@ -4,6 +4,6 @@ Firebase ID token verification uses ADC and FIREBASE_PROJECT_ID. The verified UI
 
 Loans participant operations use its existing GET /api/v1/prestamos/{id} with the verified user's token. Administrative resolution requires a proposed private contract, documented in docs/admin-incidents.md; it is not available on Loans main at this time and fails closed. Admin list, review and notes use only owned data.
 
-Evidence registration, multipart Cloudinary upload, participant incident management and administrative routes are implemented. The existing 13 automated tests passed locally before admin changes. New tests require execution. Real upload, integrated requests, physical migration verification, historical-data migration, Gemini, messaging, full response compatibility and deployment remain pending.
+Evidence registration, multipart Cloudinary upload, participant incident management and administrative routes are implemented. The existing 22 automated tests passed locally before analysis changes. Gemini analysis and polling routes are implemented; new tests and real provider calls require verification. Real upload, integrated requests, physical migration verification, historical-data migration, durable analysis execution, circuit breaker, messaging, full response compatibility and deployment remain pending.
 
 Keep service-to-service routes private and use TLS. Do not commit ADC files or tokens.

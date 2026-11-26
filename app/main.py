@@ -5,6 +5,8 @@ from app.interfaces.rest.incident import router as incident_router
 
 from app.interfaces.rest.admin_incident import router as admin_incident_router
 
+from app.interfaces.rest.analysis import router as analysis_router
+
 app = FastAPI(
     title="LendUp Evidence and Incident Service",
     description="Evidence management, incident resolution and assisted image analysis.",
@@ -14,3 +16,4 @@ app.include_router(health_router)
 app.include_router(evidence_router)
 app.include_router(incident_router)
 app.include_router(admin_incident_router)
+app.include_router(analysis_router)
