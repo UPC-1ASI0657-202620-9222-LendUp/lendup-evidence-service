@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.interfaces.rest.health import router as health_router
 from app.interfaces.rest.evidence import router as evidence_router
+from app.interfaces.rest.incident import router as incident_router
 
 app = FastAPI(
     title="LendUp Evidence and Incident Service",
@@ -9,3 +10,4 @@ app = FastAPI(
 )
 app.include_router(health_router)
 app.include_router(evidence_router)
+app.include_router(incident_router)

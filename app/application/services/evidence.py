@@ -22,6 +22,8 @@ def register_evidence(session: Session, loan_id: UUID, user: Principal, data: di
         incident = IncidentRepository(session).get(str(incident_id)) if incident_id else None
         if not incident or incident["prestamo_id"] != str(loan_id) or stage != EvidenceStage.INCIDENT:
             raise HTTPException(400, "Incidencia incompatible")
+        if kind == EvidenceType.NOTE and incident["reportada_por_usuario_id"] != user.user_id:
+            raise HTTPException(403, "Usa el endpoint de descargo para registrar una observación de la contraparte")
         if incident["estado"] == "RESUELTA":
             raise HTTPException(409, "Incidencia resuelta")
     values = {"prestamo_id": str(loan_id), "registrada_por_usuario_id": user.user_id,
