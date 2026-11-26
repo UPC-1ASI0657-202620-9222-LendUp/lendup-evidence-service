@@ -6,7 +6,7 @@ from firebase_admin import auth
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.infrastructure.clients.identity import resolve_user
+from app.infrastructure.clients.identity import resolve_user, resolve_role
 from app.shared.config import Settings
 
 bearer = HTTPBearer(auto_error=False)
@@ -46,3 +46,9 @@ def current_user(credentials: HTTPAuthorizationCredentials | None = Depends(bear
     except Exception:
         raise HTTPException(503, "Firebase no disponible") from None
     return Principal(uid, resolve_user(uid), credentials.credentials)
+
+
+def current_admin(user: Principal = Depends(current_user)) -> Principal:
+    if resolve_role(user.user_id) != "ADMINISTRADOR":
+        raise HTTPException(403, "Se requiere rol ADMINISTRADOR")
+    return user

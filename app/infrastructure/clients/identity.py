@@ -20,3 +20,24 @@ def resolve_user(uid: str) -> str:
         return str(UUID(response.json()["usuario_id"]))
     except (httpx.HTTPError, ValueError, KeyError, TypeError):
         raise HTTPException(503, "No se pudo consultar Identidad") from None
+
+
+def resolve_role(user_id: str) -> str:
+    settings = Settings()
+    if not settings.identity_service_url or len(settings.identity_service_token) < 32:
+        raise HTTPException(503, "Identidad no configurado")
+    try:
+        identifier = str(UUID(user_id))
+        response = httpx.get(
+            settings.identity_service_url.rstrip("/") + f"/internal/v1/identidad/usuarios/{identifier}/rol",
+            headers={"Authorization": f"Bearer {settings.identity_service_token}"}, timeout=5,
+        )
+        if response.status_code == 404:
+            raise HTTPException(403, "Usuario no registrado")
+        response.raise_for_status()
+        role = response.json()["rol"]
+        if role not in ("ESTUDIANTE", "ADMINISTRADOR"):
+            raise ValueError("Unknown role")
+        return role
+    except (httpx.HTTPError, ValueError, KeyError, TypeError):
+        raise HTTPException(503, "No se pudo verificar el rol en Identidad") from None

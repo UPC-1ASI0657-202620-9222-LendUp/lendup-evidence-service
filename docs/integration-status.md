@@ -1,11 +1,9 @@
 # Integration status
 
-Firebase ID token verification uses ADC and FIREBASE_PROJECT_ID. The verified Firebase UID must be resolved to the LendUp user UUID; never use the UID directly as a domain user ID.
+Firebase ID token verification uses ADC and FIREBASE_PROJECT_ID. The verified UID is mapped to the LendUp UUID via Identity. Identity main now exposes the Evidence-authorized UID and role endpoints. Configure IDENTITY_SERVICE_URL and IDENTITY_SERVICE_TOKEN (dedicated token of at least 32 characters). Live deployment and credentials still require verification.
 
-Identity currently allows only reservations, payments and notifications on GET /internal/v1/identidad/firebase/{uid}. Its team must add an evidence-specific token and permission to this route. Configure IDENTITY_SERVICE_URL and IDENTITY_SERVICE_TOKEN here after that change. Tokens must be distinct and at least 32 characters.
+Loans participant operations use its existing GET /api/v1/prestamos/{id} with the verified user's token. Administrative resolution requires a proposed private contract, documented in docs/admin-incidents.md; it is not available on Loans main at this time and fails closed. Admin list, review and notes use only owned data.
 
-Loans uses the existing participant-only GET /api/v1/prestamos/{id} contract, forwarding the verified user's Bearer token. Configure LOANS_SERVICE_URL. The dedicated internal loan contract is not assumed to exist. Admin authorization will require an authoritative Identity role contract; never trust a user-supplied role.
-
-Current evidence registration supports observations and pending media placeholders. External media URLs are deliberately not trusted as evidence; verified multipart upload with Cloudinary is implemented but not yet tested against a real account. This is not yet full monolith compatibility. Analysis, incidents, messaging and admin routes remain pending.
+Evidence registration, multipart Cloudinary upload, participant incident management and administrative routes are implemented. The existing 13 automated tests passed locally before admin changes. New tests require execution. Real upload, integrated requests, physical migration verification, historical-data migration, Gemini, messaging, full response compatibility and deployment remain pending.
 
 Keep service-to-service routes private and use TLS. Do not commit ADC files or tokens.
