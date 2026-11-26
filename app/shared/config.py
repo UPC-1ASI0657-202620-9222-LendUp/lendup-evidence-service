@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     cloudinary_api_secret: str = ""
     gemini_api_key: str = ""
     gemini_model: str = ""
-    gemini_timeout_seconds: float = 20.0
+    gemini_timeout_seconds: float = 60.0
     outbox_publisher_enabled: bool = False
     loan_consumer_enabled: bool = False
     rabbitmq_url: str = ""

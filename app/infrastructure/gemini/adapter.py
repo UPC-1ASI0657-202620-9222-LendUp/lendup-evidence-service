@@ -88,7 +88,7 @@ class GoogleAIAdapter:
 
     async def _compare(self, initial_url: str, final_url: str) -> AnalysisResult:
         s = self.settings
-        timeout = min(20.0, max(0.1, s.gemini_timeout_seconds))
+        timeout = min(60.0, max(0.1, s.gemini_timeout_seconds))
         async with asyncio.timeout(timeout):
             async with httpx.AsyncClient(timeout=timeout, follow_redirects=False, trust_env=False) as http:
                 initial, final = await asyncio.gather(
